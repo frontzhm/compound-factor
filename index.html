@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>复利系数</title>
+    <!-- <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script> -->
+    <script src="./vue.global.js"></script>
+    <style>
+      p,
+      body {
+        padding: 0;
+        margin: 0;
+      }
+      .module {
+        padding: 20px;
+        line-height: 2;
+      }
+      .form-box {
+        display: flex;
+        flex-wrap: wrap;
+      }
+      .item {
+        display: flex;
+        flex-wrap: wrap;
+      }
+      .text-input {
+        border: 0;
+        border-bottom: 1px solid #ccc;
+        width: 40px;
+        padding: 0 5px;
+        border-radius: 0;
+        font-size: 14px;
+      }
+      .radio-input + label {
+        border: 1px solid #ccc;
+        padding: 0 7px;
+      }
+      .radio-input:checked + label {
+        background-color: rgb(0, 115, 236);
+        color: #fff;
+      }
+      .count {
+        color: rgb(0, 115, 236);
+        margin-left: 5px;
+      }
+      .math-box {
+        margin-top: 20px;
+      }
+      .btn {
+        width: 100px;
+        height: 40px;
+        line-height: 40px;
+        color: #fff;
+        text-align: center;
+        margin: 20px auto;
+        background-color: rgb(0, 115, 236);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <main>
+        <!-- 复利系数内容 ---- 开始 -->
+
+        <section class="module factor-box">
+          <div class="form-box">
+            <div class="item">
+              【复利系数】当 i 是
+              <input v-model="factorParams.i" class="text-input" />
+              %，
+            </div>
+            <div class="item">
+              n 是
+              <input v-model="factorParams.n" class="text-input" />，
+            </div>
+            <div class="item">
+              类型是
+
+              <div v-for="({text,value},index) in optionsType" :key="index">
+                <input
+                  class="radio-input"
+                  type="radio"
+                  :id="value"
+                  :value="value"
+                  v-model="factorParams.type"
+                  hidden
+                />
+                <label :for="value">{{text}}</label>
+              </div>
+            </div>
+            （可选，已知的值是
+            <input v-model="factorParams.valueKnown" class="text-input" />）
+          </div>
+          <div class="item">
+            那么，系数是<span class="count">{{factor}}</span>
+            {{factor &&
+            factorParams.valueKnown?`，已知值乘以系数是${factor}*${factorParams.valueKnown}=${(factor*factorParams.valueKnown).toFixed(4)}`:''}}
+          </div>
+        </section>
+
+        <!-- 复利系数内容 ---- 结束 -->
+        <section class="math-box module">
+          <div class="item">
+            【次方】<input
+              type="text"
+              v-model="powParams.count"
+              class="text-input"
+            />
+            的
+            <input type="text" v-model="powParams.n" class="text-input" />
+            次方是<span class="count">{{pow}}</span>
+          </div>
+        </section>
+        <section class="math-box module">
+          <div class="item">
+            【开根号】<input
+              type="text"
+              v-model="sqrtParams.count"
+              class="text-input"
+            />
+            的
+            <input type="text" v-model="sqrtParams.n" class="text-input" />
+            次根是<span class="count">{{sqrt}}</span>
+          </div>
+        </section>
+        <!-- 其他内容 ---- 结束 -->
+        <div class="btn" @click="reset">重置</div>
+      </main>
+    </div>
+
+    <script>
+      const { createApp } = Vue;
+      // (1+i)的n次方
+      const pow = (i, n) => Math.pow(1 + i / 100, n);
+      const FP = (i, n) => pow(i, n).toFixed(4);
+      const PF = (i, n) => (1 / pow(i, n)).toFixed(4);
+
+      const FA = (i, n) => ((pow(i, n) - 1) / (i / 100)).toFixed(4);
+      const AF = (i, n) => (i / 100 / (pow(i, n) - 1)).toFixed(4);
+      const AP = (i, n) =>
+        (((i / 100) * pow(i, n)) / (pow(i, n) - 1)).toFixed(4);
+      const PA = (i, n) =>
+        ((pow(i, n) - 1) / ((i / 100) * pow(i, n))).toFixed(4);
+      const factorFormula = { FP, PF, FA, AF, PA, AP };
+      const factorParamsInit = {
+        i: null,
+        n: null,
+        type: null,
+        valueKnown: null,
+      };
+      const powParamsInit = {
+        count: null,
+        n: null,
+      };
+      const sqrtParamsInit = {
+        count: null,
+        n: null,
+      };
+      createApp({
+        data() {
+          return {
+            factorParams: { ...factorParamsInit },
+            optionsType: [
+              { text: 'F/P', value: 'FP' },
+              { text: 'P/F', value: 'PF' },
+              { text: 'F/A', value: 'FA' },
+              { text: 'A/F', value: 'AF' },
+              { text: 'A/P', value: 'AP' },
+              { text: 'P/A', value: 'PA' },
+            ],
+            powParams: { ...powParamsInit },
+            sqrtParams: { ...sqrtParamsInit },
+          };
+        },
+        computed: {
+          factor() {
+            const { i, n, type, valueKnown } = this.factorParams;
+            const hasValue = i && n && type;
+            return hasValue ? factorFormula[type](i, n) : '';
+          },
+          factorResult() {
+            const { factor, valueKnown } = this.factorParams;
+            return (factor * valueKnown).toFixed(4);
+          },
+          pow() {
+            const hasValue = Object.values(this.powParams).every(Boolean);
+            const { count, n } = this.powParams;
+            return hasValue ? Math.pow(count, n).toFixed(4) : '';
+          },
+          sqrt() {
+            const hasValue = Object.values(this.sqrtParams).every(Boolean);
+            const { count, n } = this.sqrtParams;
+            return hasValue ? Math.pow(count, 1 / n).toFixed(4) : '';
+          },
+        },
+        methods: {
+          reset() {
+            this.powParams = {...powParamsInit};
+            this.sqrtParams = {...sqrtParamsInit};
+            this.factorParams = {...factorParamsInit};
+          },
+        },
+      }).mount('#app');
+    </script>
+    <!-- scp -r /Users/zhm/mygit/react-source/math han:~/zhm/ -->
+    <!-- scp /Users/zhm/mygit/react-source/math/index.html han:/data/nginx/html/index.html -->
+    <!-- scp /Users/zhm/mygit/react-source/math/vue.global.js han:/data/nginx/html/vue.global.js -->
+  </body>
+</html>
